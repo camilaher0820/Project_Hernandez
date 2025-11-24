@@ -1,0 +1,333 @@
+---
+title: "Global Facebook Usage Analysis; An exploration of facebook user trends"
+Author: Camila Hernandez
+output:
+  html_document:
+    df_print: paged
+---
+
+# Libraries Used
+```{r}
+
+library(countrycode)
+library(dplyr)
+library(lubridate)
+```
+ 
+# Reading in the Data
+Before beginning the analysis, read in the dataset that contains information about global Facebook usage, population, and different country names.
+```{r}
+Facebook<- read.csv("FB_bycountrydata.csv")
+```
+
+```{r}
+head(Facebook)
+```
+
+
+# Summary
+
+In this project we look at Facebook usage across 126 countries to see how population size relates to the total number of Facebook users and the percentage of Facebook users in each country. First, the data was cleaned by making sure all columns are correctly formatted, removing extra characters, and making columns numeric. Countries were also grouped by continent in a new column so the regional comparison could be easier.
+
+To understand the trends,scatterplots and barplots were used. Scatterplots show more of a global trend, comparing users and population from all countries. These compared how the total number of users and the total percentage of users relate to population, while barplots let us see more precise trends, specifically by continent. In these barplots the Number of users and the population of each country was compared and how this differs across countries.
+
+The results showed that the bigger the countries were, generally, the more Facebook users they'd have ,although, there are some exceptions like Russia that don’t follow this trend. For the User Percentage, we observed that it doesn’t really depend much on the Population size. This could be because of different factors like internet access, social media culture, or other personal user choices that also affect how many users a country has. Overall, these graphs helped understand and visualize global Facebook usage and it showed that population isn’t entirely the only factor that matters.
+
+# Purpose
+
+The main goal of this project is to analyze and vizualise global Facebook usage trends and patterns. Also, understand how population size relates to different factors like user percentage and total number of users globally and regionally.
+
+Key questions
+
+- Do countries with larger populations have more Facebook users?
+
+- How does theuser percentage depend on population size?
+
+- Which continent and countries have the greatest number of users?
+
+
+
+# Information about Data Set
+```{r}
+summary(Facebook)
+```
+
+- **Name**: This column contains the names of 126 different countries - Categorial Data
+- **UsersFixed**: Number of Facebook users in that country - Numerical Data
+- **Facebook_Users**: Percentage of the population using Facebook - Numerical Data
+- **Date_of_Data** : Date when data was collected - Categorical Data
+- **Population**: Total population of that country - Numerical Data
+
+### Cleaning each column(a quick summary)
+
+From the summary, we can see that the User, UserPercentage, Date_of_Data, and Population columns are originally not numeric. 
+
+- The Users column was cleaned on the original CSV file where a new column called "Users Fixed" was added, in this "UserFixed" column the "M" and "K" from the original column was removed and multiplied by a thousand or a million accordingly. 
+- The Facebook user column and Population column  which show the percentage of Facebook users and the Population per country also need to be cleaned. All non numeric symbols were removed using gsub(). After all symbols are removed we use as.numerir() to convert the column.
+- The "Date_of_Data" column was converted to a Year-Month format using ym() from lubridate.
+- For the sake of making the plots look cleaner the User and Population columns were scaled to hundreds (divided by a million) to make plots easier to read. Two new columns were added to store this, Users_mills and Population_mills
+
+Cleaning these columns allows numerical vizualition and different operations  to be done correctly. From the Name column we can see there are 126 entries,  which means this is global data collected across 126 countries.
+
+
+
+### Classifying all contries by their corresponding continent.
+```{r}
+Facebook$Continent <- countrycode(sourcevar = Facebook$Name,
+                                       origin = "country.name",
+                                       destination = "continent")
+
+```
+
+
+```{r}
+Facebook %>%
+  group_by(Continent) %>%
+  summarize(Number_of_Countries = n())
+```
+
+
+
+### Cleaning the Population Column
+Remove all non numeric characters and use as.numeric() to convert the column
+```{r}
+Facebook$Population <- gsub(" ", "",Facebook$Population )
+```
+
+```{r}
+Facebook$Population <- gsub(",", "",Facebook$Population )
+```
+
+```{r}
+Facebook$Population <- as.numeric(Facebook$Population)
+```
+
+
+
+### Cleaning the Facebook User Percentage Column
+```{r}
+Facebook$Facebook_Users.<- sub("%", "", Facebook$Facebook_Users.)
+```
+
+```{r}
+Facebook$Facebook_Users. <- as.numeric(Facebook$Facebook_Users.)
+```
+
+```{r}
+Facebook <- Facebook %>%
+  rename(UserPercentage = Facebook_Users.)
+```
+
+
+
+### Cleaning the Date Column
+```{r}
+Facebook$Date_of_Data <- ym(Facebook$Date_of_Data)
+```
+
+```{r}
+range(Facebook$Date_of_Data, na.rm = TRUE)
+```
+The Date_of_Data column was converted to date format using Year-Month format so a place holder day (-01) is added. This allows to visualize the period during which the data was collected. This gives us context to the dataset and the earliest and latest dates data was collected. This helps us understand the timeframe, which is from December 2020 to June 2021.
+
+
+
+### Scalling Population and UsersFixed columns for plotting purposes
+```{r}
+Facebook$Population_mill <- Facebook$Population / 1000000
+Facebook$Users_mill <- Facebook$UsersFixed /1000000
+
+```
+
+
+# Exploratory Data Analysis
+
+
+## a. Scatterplots  
+The following section shows scatterplots  used to identify trends between population, Facebook users, and user percentage. 
+
+In this graph we compare the number of Facebook users(not percentage) compared to the population of these countries. We can observe a clear positive trend, where the larger the population of these countries is , the more Facebook users they tend to have.However,there are a some outliers, countries with populations around 25 and 50 million.In particular, Rusia shows a very low user to population ratio. These outliers do not follow the gener trens observed in the rest of the data
+
+
+```{r}
+options(scipen=999)
+
+plot(Facebook$Population_mill, 
+     Facebook$Users_mill,
+     xlab = "Population (in millions)",
+     ylab = "Number of Facebook Users (in millions)",
+     main = "Facebook Users vs Population",
+     col = "pink",
+     pch = 19)
+
+
+```
+
+
+
+
+
+
+In this graph, we compare the percentage of the population using Facebook across countries of different population sizes. 
+This graph shows no clear positive or negative trend unlike the  previous plot. The countries with larger population don't necessarily show higher user percentages. Most countries fall around the 50-80% of users forming some what of a cluster around that area. There are also some outlier with unusually high or low percentages compared to the cluster. This graph helps showing that country size alone wont determine the percentage of users on Facebook. This might be due to different like internet penetration, other social media platforms, and just general cultural preferences. 
+```{r}
+
+plot(Facebook$Population_mill,
+     Facebook$UserPercentage,
+     xlab = "Population (in millions)",
+     ylab = "Percentage of Facebook Users",
+     main = "Facebook User Percentage per Country",
+     col = "#a47dab",
+     pch = 19)
+
+```
+
+
+
+## b. Data By Continent
+These two tables show the total Facebook users and population for each continent, giving us a clear idea of the scale of our data and how users are distributed. Making it a quick summary before we get to the barplots.
+
+
+```{r}
+Facebook %>%
+  group_by(Continent) %>%
+  summarise(Users_Per_Continent = sum(UsersFixed))%>%
+  arrange(desc(Users_Per_Continent))
+  
+```
+
+
+```{r}
+Facebook %>%
+  group_by(Continent) %>%
+  summarise(Population_Per_Continent = sum(Population)) %>%
+  arrange(desc(Population_Per_Continent))
+
+```
+
+## c. Graphs By Continent
+These barplots are made to compare the number of Facebook users across countries within each continent. Making it visually easy to see which countryes have the largest user bases and how it varies.
+
+
+
+The following barplots show the number of Facebook users in each country within a specific continent. The x-axis lists the countries, while the y-axis shows the total number of users in millions. 
+
+- **Asia:** Indonesia has the highest number of Facebook users, followed by the Philippines and Vietnam.
+- **Americas:** The United States has the highest number of users, followed by Brazil and Mexico.  
+- **Europe:** The United Kingdom, Italy, and Romania have the highest user counts in Europe. 
+- **Africa:** Algeria and Morocco stand out with the largest user count.
+- **Oceania:** Australia has the largest number of users by far, with other countries like New Zealand and Fiji behind. 
+
+Overall, these barplots  show how the number of Facebook users in each country within a specific continent. In this case the countries with the most users in each continent are the most populated ones.
+
+
+### Asia
+```{r}
+par(mar = c(9, 8, 4, 2)) 
+par(mgp = c(6, 1, 0))
+Asia <- Facebook %>% filter(Continent == "Asia")
+
+barplot(Asia$Users_mill,
+        names.arg = Asia$Name,
+        las = 2,        
+        col = "skyblue",
+        main = "Facebook Users in Asia Per Country",
+        ylab = "Number of Facebook Users (in millions)")
+
+```
+
+
+### Americas
+```{r}
+
+par(mar = c(10, 8, 4, 2)) 
+par(mgp = c(6, 1, 0))
+Americas<- Facebook %>% filter(Continent == "Americas")
+
+barplot(Americas$Users_mill,
+        names.arg =Americas$Name,
+        las = 2,        
+        col = "lightgreen",
+        main = "Facebook Users in the Americas ",
+        ylab = "Number of Facebook Users (in millions)",
+        cex.names = 0.7)
+```
+
+
+### Europe
+```{r}
+par(mar = c(9, 8, 4, 2)) 
+par(mgp = c(6, 1, 0))
+Europe<- Facebook %>% filter(Continent == "Europe")
+
+barplot(Europe$Users_mill,
+        names.arg = Europe$Name,
+        las = 2,        
+        col = "#FFEEC8",
+        main = "Facebook Users in Europe ",
+        ylab = "Number of Facebook Users (in millions)")
+```
+
+
+### Africa
+```{r}
+par(mar = c(9, 8, 4, 2)) 
+par(mgp = c(6, 1, 0))
+Africa<- Facebook %>% filter(Continent == "Africa")
+
+barplot(Africa$Users_mill,
+        names.arg = Africa$Name,
+        las = 2,        
+        col = "#FFC067",
+        main = "Facebook Users in Africa ",
+        ylab = "Number of Facebook Users (in millions)")
+```
+
+
+### Ocenia
+```{r}
+par(mar = c(10, 8, 4, 2)) 
+par(mgp = c(6, 1, 0))
+Oceania<- Facebook %>% filter(Continent == "Oceania")
+
+barplot(Oceania$Users_mill,
+        names.arg = Oceania$Name,
+        las = 2,        
+        col = "#b5b9ff",
+        main = "Facebook Users in Ocenia",
+        ylab = "Number of Facebook Users (in millions)",
+        cex.names = 0.8)
+```
+
+
+# Results
+*a. Analysis Method* ---
+The data was first cleaned and formatted to make sure all values were numeric and usable. Countries were grouped by their respective continent and a scalled down column of users and population was added for easier vizualisaion during plotting.
+The methods used were:
+- Scatterplots, used to compare the total Facebook users and percentage of users with population(globally).
+
+- Barplots, used to compare Facebook users and population across countries within each continent listed.
+
+- Some summary tables to show totals, total number of users and population per continent.
+
+*b. Reasoning Behind Methods* ---
+First, the use of Scatterplots allows us to clearly see trends and relationships between population and usage, 
+while also making it easy to spot outliers like countries that don't follow the overall positive trend. were used to see trends and relationships between population and Facebook usage, and to spot outliers like countries that didn’t follow the overall trend. 
+Barplots were chosen to make a visually simple and clear comparison by countries within each continent and show which countries had the largest number of users.
+Summary tables just give small context before getting into the graphs.
+
+*c. Overall Findings* ---
+By creating the scatterplots and barplots, we were able to visualize trends and patterns in the data. I observed that the Number of users increases with population, although some countries like Russia appeared as outliers. The user percentage showed less correlation with population, many countries just clustered around 50–80%, showing that population alone does not determine the % of Facebook users. 
+
+# Conclusions 
+This data provided global Facebook usage information acroos 126 countries. It was found that:
+
+- The Population size of a country influences the total user amount, but not necessarily the user percentage.
+- There are regional differences in Facebook adoption, which are visible in barplots and scatterplots.
+- There are visible outliers in the graphs, suggesting that other factors can influence in user behavior.
+
+*Limitations:* ---
+limitations to this analysis, only 126 countries are included,having some of the most populated countries across all continents completely missing from this analysis.Factors such as internet access or other useful information to determine the reason for outliers in graphs are not included.
+
+## References
+- This data was downloaded fromm kaggle: "FB_bycountrydata"
