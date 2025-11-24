@@ -1,0 +1,1 @@
+The ZIP folder contains all the required files for my project. Inside, you will find a “data” folder that includes the actual dataset used for the analysis. The initial proposal to this project.There is also a project folder with my report including data cleaning, visualizations, and analysis code. The presentation folder contains the final presentation explained in class.
